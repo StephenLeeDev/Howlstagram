@@ -45,9 +45,9 @@ class LoginActivity : AppCompatActivity() {
             ?.addOnCompleteListener {
                 task ->
                 if(task.isSuccessful) {
-                    //Login
+                    moveMainPage(task.result?.user)
                 } else {
-                    //Show the error message
+                    Toast.makeText(this, task.exception?.message, Toast.LENGTH_SHORT).show()
                 }
             }
     }
