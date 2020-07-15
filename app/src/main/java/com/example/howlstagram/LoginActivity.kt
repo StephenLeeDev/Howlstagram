@@ -27,14 +27,19 @@ class LoginActivity : AppCompatActivity() {
         auth?.createUserWithEmailAndPassword(email_edittext.text.toString(), password_edittext.text.toString())
             ?.addOnCompleteListener {
             task ->
-                if(task.isSuccessful) {
-                    //Creating a user account
-                    moveMainPage(task.result?.user)
-                } else if(!task.exception?.message.isNullOrEmpty()) {
-                    //Show the error message
-                    Toast.makeText(this, task.exception?.message, Toast.LENGTH_SHORT).show()
+                if (task.isSuccessful) {
+                    //아이디 생성이 성공했을 경우
+                    Toast.makeText(this,
+                        getString(R.string.signup_complete), Toast.LENGTH_SHORT).show()
+
+                    //다음페이지 호출
+                    moveMainPage(auth?.currentUser)
+                } else if (task.exception?.message.isNullOrEmpty()) {
+                    //회원가입 에러가 발생했을 경우
+                    Toast.makeText(this,
+                        task.exception!!.message, Toast.LENGTH_SHORT).show()
                 } else {
-                    //Login if you have account
+                    //아이디 생성도 안되고 에러도 발생되지 않았을 경우 로그인
                     signinEmail()
                 }
         }
