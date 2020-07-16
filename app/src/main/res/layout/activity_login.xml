@@ -31,6 +31,7 @@
             android:layout_height="wrap_content">
 
             <EditText
+                android:text="test@a.com"
                 android:id="@+id/email_edittext"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -43,6 +44,7 @@
             android:layout_height="match_parent">
 
             <EditText
+                android:text="111111"
                 android:id="@+id/password_edittext"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
