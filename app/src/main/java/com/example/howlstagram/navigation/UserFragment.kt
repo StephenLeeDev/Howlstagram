@@ -1,5 +1,6 @@
 package com.example.howlstagram.navigation
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -21,16 +22,19 @@ import com.example.howlstagram.model.ContentDTO
 import com.example.howlstagram.model.FollowDTO
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_user.view.*
 
 class UserFragment : Fragment() {
 
+    val PICK_PROFILE_FROM_ALBUM = 10
     var fragmentView : View? = null
     var firestore : FirebaseFirestore? = null
     var uid : String? = null
     var auth : FirebaseAuth? = null
     var currentUserUid : String? = null
+    var storage : FirebaseStorage? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -42,6 +46,23 @@ class UserFragment : Fragment() {
         firestore = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
         currentUserUid = auth?.currentUser?.uid
+        storage = FirebaseStorage.getInstance()
+
+        FirebaseFirestore.getInstance().collection("profileImages").document(uid!!).get().addOnCompleteListener { task ->
+            if(task.isSuccessful) {
+                val url = task.result!!["image"]
+                Glide.with(fragmentView!!).load(url).apply(RequestOptions().circleCrop()).into(fragmentView!!.account_iv_profile)
+            }
+        }
+
+        //Open the album
+        var photoPickerIntent = Intent(Intent.ACTION_PICK)
+        photoPickerIntent.type = "image/*"
+
+        //set profile image
+        fragmentView?.account_iv_profile?.setOnClickListener {
+            startActivityForResult(photoPickerIntent, PICK_PROFILE_FROM_ALBUM)
+        }
 
         if (uid == currentUserUid) {
             //My Page
@@ -69,6 +90,27 @@ class UserFragment : Fragment() {
 
 //        Log.d("onCreateView", "onCreateView")
         return fragmentView
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+
+        // 앨범에서 Profile Image 사진 선택시 호출 되는 부분분
+        if (requestCode == PICK_PROFILE_FROM_ALBUM && resultCode == Activity.RESULT_OK) {
+
+            var imageUri = data?.data
+
+            val uid = FirebaseAuth.getInstance().currentUser!!.uid
+            var storageRef = storage?.reference?.child("userProfileImages")?.child(uid)
+            //사진을 업로드 하는 부분  userProfileImages 폴더에 uid에 파일을 업로드함
+            storageRef?.putFile(imageUri!!)?.addOnSuccessListener {
+                storageRef.downloadUrl.addOnSuccessListener { uri ->
+                    val url = uri.toString()
+                    val map = HashMap<String, Any>()
+                    map["image"] = url
+                    FirebaseFirestore.getInstance().collection("profileImages").document(uid).set(map)
+                }
+            }
+        }
     }
 
     inner class UserFragmentRecyclerViewAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {

@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import com.example.howlstagram.R
 import com.example.howlstagram.model.AlarmDTO
 import com.example.howlstagram.model.ContentDTO
@@ -16,6 +17,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.fragment_detail.view.*
+import kotlinx.android.synthetic.main.item_comment.view.*
 import kotlinx.android.synthetic.main.item_detail.view.*
 
 class DetailViewFragment : Fragment() {
@@ -71,6 +73,13 @@ class DetailViewFragment : Fragment() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             var viewHolder = (holder as CustomViewHolder).itemView
+
+//            FirebaseFirestore.getInstance().collection("profileImages").document(contentDTOs[position].uid!!).get().addOnCompleteListener { task ->
+//                if(task.isSuccessful) {
+//                    val url = task.result["image"]
+//                    Glide.with(viewHolder.context).load(url).apply(RequestOptions().circleCrop()).into(viewHolder.commentviewitem_imageview_profile)
+//                }
+//            }
 
             //UserId
             viewHolder.detailviewitem_profile_textview.text = contentDTOs!![position].userId
