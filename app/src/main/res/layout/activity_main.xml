@@ -34,7 +34,7 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:textColor="@color/colorNavIcon"
-                android:text="UserID"
+                android:text=""
                 android:textSize="16dp"
                 app:layout_constraintStart_toEndOf="@+id/toolbar_btn_back" />
 
