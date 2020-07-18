@@ -10,8 +10,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.howlstagram.R
+import com.example.howlstagram.model.AlarmDTO
 import com.example.howlstagram.model.ContentDTO
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.fragment_detail.view.*
 import kotlinx.android.synthetic.main.item_detail.view.*
@@ -21,6 +23,7 @@ class DetailViewFragment : Fragment() {
     var firestore: FirebaseFirestore? = null
     var auth : FirebaseAuth? = null
     var uid = auth?.currentUser?.uid
+    var user: FirebaseUser? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -28,6 +31,7 @@ class DetailViewFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         var view = inflater.inflate(R.layout.fragment_detail, container, false)
+        user = FirebaseAuth.getInstance().currentUser
         firestore = FirebaseFirestore.getInstance()
 
         view.detailviewfragment_recyclerview.adapter = DetailViewRecyclerViewAdapter()
@@ -106,6 +110,7 @@ class DetailViewFragment : Fragment() {
             viewHolder.detailviewitem_comment_imageview.setOnClickListener { view ->
                 var intent = Intent(view.context, CommentActivity::class.java)
                 intent.putExtra("contentUid", contentUidList[position])
+                intent.putExtra("destinationUid", contentDTOs[position].uid)
                 startActivity(intent)
             }
         }
@@ -126,10 +131,24 @@ class DetailViewFragment : Fragment() {
                     // Star the post and add self to stars
                     contentDTO?.favoriteCount = contentDTO?.favoriteCount!! + 1
                     contentDTO?.favorites[uid] = true
-//                    favoriteAlarm(contentDTOs[position].uid!!)
+                    favoriteAlarm(contentDTOs[position].uid!!)
                 }
                 transaction.set(tsDoc, contentDTO)
             }
+        }
+
+        fun favoriteAlarm(destinationUid: String) {
+
+            val alarmDTO = AlarmDTO()
+            alarmDTO.destinationUid = destinationUid
+            alarmDTO.userId = user?.email
+            alarmDTO.uid = user?.uid
+            alarmDTO.kind = 0
+            alarmDTO.timestamp = System.currentTimeMillis()
+
+            FirebaseFirestore.getInstance().collection("alarms").document().set(alarmDTO)
+            var message = user?.email + getString(R.string.alarm_favorite)
+//            fcmPush?.sendMessage(destinationUid, "알림 메세지 입니다.", message)
         }
     }
 }

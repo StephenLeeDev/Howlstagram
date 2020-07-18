@@ -16,7 +16,9 @@ import com.bumptech.glide.request.RequestOptions
 import com.example.howlstagram.LoginActivity
 import com.example.howlstagram.MainActivity
 import com.example.howlstagram.R
+import com.example.howlstagram.model.AlarmDTO
 import com.example.howlstagram.model.ContentDTO
+import com.example.howlstagram.model.FollowDTO
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_main.*
@@ -109,5 +111,84 @@ class UserFragment : Fragment() {
             var imageview = (holder as CustomViewHolder).imageview
             Glide.with(holder.itemView.context).load(contentDTOs[position].imageUrl).apply(RequestOptions().centerCrop()).into(imageview)
         }
+    }
+
+    fun requestFollow() {
+
+
+        var tsDocFollowing = firestore!!.collection("users").document(currentUserUid!!)
+        firestore?.runTransaction { transaction ->
+
+            var followDTO = transaction.get(tsDocFollowing).toObject(FollowDTO::class.java)
+            if (followDTO == null) {
+
+                followDTO = FollowDTO()
+                followDTO.followingCount = 1
+                followDTO.followings[uid!!] = true
+
+                transaction.set(tsDocFollowing, followDTO)
+                return@runTransaction
+
+            }
+            // Unstar the post and remove self from stars
+            if (followDTO?.followings?.containsKey(uid)!!) {
+
+                followDTO?.followingCount = followDTO?.followingCount - 1
+                followDTO?.followings.remove(uid)
+            } else {
+
+                followDTO?.followingCount = followDTO?.followingCount + 1
+                followDTO?.followings[uid!!] = true
+                followerAlarm(uid!!)
+            }
+            transaction.set(tsDocFollowing, followDTO)
+            return@runTransaction
+        }
+
+        var tsDocFollower = firestore!!.collection("users").document(uid!!)
+        firestore?.runTransaction { transaction ->
+
+            var followDTO = transaction.get(tsDocFollower).toObject(FollowDTO::class.java)
+            if (followDTO == null) {
+
+                followDTO = FollowDTO()
+                followDTO!!.followerCount = 1
+                followDTO!!.followers[currentUserUid!!] = true
+
+
+                transaction.set(tsDocFollower, followDTO!!)
+                return@runTransaction
+            }
+
+            if (followDTO?.followers?.containsKey(currentUserUid!!)!!) {
+
+
+                followDTO!!.followerCount = followDTO!!.followerCount - 1
+                followDTO!!.followers.remove(currentUserUid!!)
+            } else {
+
+                followDTO!!.followerCount = followDTO!!.followerCount + 1
+                followDTO!!.followers[currentUserUid!!] = true
+
+            }// Star the post and add self to stars
+
+            transaction.set(tsDocFollower, followDTO!!)
+            return@runTransaction
+        }
+
+    }
+
+    fun followerAlarm(destinationUid: String) {
+
+        val alarmDTO = AlarmDTO()
+        alarmDTO.destinationUid = destinationUid
+        alarmDTO.userId = auth?.currentUser!!.email
+        alarmDTO.uid = auth?.currentUser!!.uid
+        alarmDTO.kind = 2
+        alarmDTO.timestamp = System.currentTimeMillis()
+
+        FirebaseFirestore.getInstance().collection("alarms").document().set(alarmDTO)
+        var message = auth?.currentUser!!.email + getString(R.string.alarm_follow)
+//        fcmPush?.sendMessage(destinationUid, "알림 메세지 입니다.", message)
     }
 }
