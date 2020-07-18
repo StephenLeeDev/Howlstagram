@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.howlstagram.R
 import com.example.howlstagram.model.ContentDTO
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.fragment_detail.view.*
 import kotlinx.android.synthetic.main.item_detail.view.*
@@ -17,6 +18,8 @@ import kotlinx.android.synthetic.main.item_detail.view.*
 class DetailViewFragment : Fragment() {
 
     var firestore: FirebaseFirestore? = null
+    var auth : FirebaseAuth? = null
+    var uid = auth?.currentUser?.uid
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,6 +43,7 @@ class DetailViewFragment : Fragment() {
             firestore?.collection("images")?.orderBy("timestamp")?.addSnapshotListener { querySnapshot, firebaseFirestoreException ->
                 contentDTOs.clear()
                 contentUidList.clear()
+                if(querySnapshot == null) return@addSnapshotListener
                 for(snapshot in querySnapshot!!.documents) {
                     var item = snapshot.toObject(ContentDTO::class.java)
                     contentDTOs.add(item!!)
@@ -72,11 +76,54 @@ class DetailViewFragment : Fragment() {
             //Explain of content
             viewHolder.detailviewitem_explain_textview.text = contentDTOs!![position].explain
 
-            //likes
+            //Likes
             viewHolder.detailviewitem_favoritecounter_textview.text = "Likes " + contentDTOs!![position].favoriteCount
 
-            //ProfileImage
-            Glide.with(holder.itemView.context).load(contentDTOs!![position].imageUrl).into(viewHolder.detailviewitem_profile_image)
+            //Likes button clicked
+            viewHolder.detailviewitem_favorite_imageview.setOnClickListener {
+                favoriteEvent(position)
+            }
+
+            //The page is loaded
+            if(contentDTOs!![position].favorites.containsKey(uid)) {
+                //This is like status
+                viewHolder.detailviewitem_favorite_imageview.setImageResource(R.drawable.ic_favorite)
+            } else {
+                //This is unlike status
+                viewHolder.detailviewitem_favorite_imageview.setImageResource(R.drawable.ic_favorite_border)
+            }
+
+            //The profile image clicked
+            viewHolder.detailviewitem_profile_image.setOnClickListener {
+                var fragment = UserFragment()
+                var bundle = Bundle()
+                bundle.putString("destinationUid", contentDTOs[position].uid)
+                bundle.putString("userId", contentDTOs[position].userId)
+                fragment.arguments = bundle
+                activity?.supportFragmentManager?.beginTransaction()?.replace(R.id.main_content, fragment)?.commit()
+            }
+        }
+
+        private fun favoriteEvent(position: Int) {
+            var tsDoc = firestore?.collection("images")?.document(contentUidList[position])
+            firestore?.runTransaction { transaction ->
+
+                val uid = FirebaseAuth.getInstance().currentUser!!.uid
+                val contentDTO = transaction.get(tsDoc!!).toObject(ContentDTO::class.java)
+
+                if (contentDTO!!.favorites.containsKey(uid)) {
+                    // Unstar the post and remove self from stars
+                    contentDTO?.favoriteCount = contentDTO?.favoriteCount!! - 1
+                    contentDTO?.favorites.remove(uid)
+
+                } else {
+                    // Star the post and add self to stars
+                    contentDTO?.favoriteCount = contentDTO?.favoriteCount!! + 1
+                    contentDTO?.favorites[uid] = true
+//                    favoriteAlarm(contentDTOs[position].uid!!)
+                }
+                transaction.set(tsDoc, contentDTO)
+            }
         }
     }
 }

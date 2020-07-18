@@ -105,7 +105,6 @@
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:background="#F00"
         android:id="@+id/account_recyclerview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
